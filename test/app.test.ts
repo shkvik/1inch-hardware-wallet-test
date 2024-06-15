@@ -65,7 +65,7 @@ describe('Services', () => {
       const fileTwo = await serv.upload(testFile);
 
       expect(fileOne).toEqual(`v1_${testFile.originalname}`);
-      expect(fileTwo).toBeUndefined();
+      expect(fileTwo).toEqual(testFile.originalname);
     });
 
     it('[success] upload and update file', async () => {
