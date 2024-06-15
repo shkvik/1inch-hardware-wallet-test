@@ -60,12 +60,15 @@ export class LocalFileManagerService extends IFileManager {
 
   private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
     const files = await readdir(join(this.filesPath));
-    if(fileName === '1'){
-      console.log(1)
-    }
-    const filteredFiles = files.filter(file => 
-      file.slice(file.indexOf(`_`)) === fileName
-    );
+    const filteredFiles = files.filter(file => {
+      const tmp = file.slice(file.indexOf(`_`) + 1);
+      return tmp === fileName;
+    });
+    filteredFiles.sort((a,b)=>{
+      const versionA = Number(a.substring(1, a.indexOf(`_`)));
+      const versionB = Number(b.substring(1, b.indexOf(`_`)));
+      return versionA - versionB;
+    }) 
     if(version){
       const findedVersion = files.find(
         file => Number(file.substring(1, file.indexOf(`_`))) === version

@@ -2,10 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LocalFileManagerService } from 'src/modules/file-manager/file-manager.service';
 import { IFileManager } from 'src/modules/file-manager/file-manager.interface';
 import { Readable } from 'stream';
-import { remove, exists } from 'fs-extra';
+import { remove, exists, readdir } from 'fs-extra';
+import { BadRequestException } from '@nestjs/common';
+import { basename } from 'path';
+
+const filesPath = 'test/files';
+async function deleteTestFiles(){
+  const path = `${process.cwd()}/${filesPath}`;
+  const files = await readdir(path);
+  const tasks = files.map(async file => {
+    await remove(`${path}/${file}`);
+  })
+  await Promise.all(tasks);
+}
 
 describe('Services', () => {
-  let filesPath = 'test/files';
+
   let serv: IFileManager;
 
   describe(`FileManager`, () => {
@@ -39,67 +51,149 @@ describe('Services', () => {
       serv = module.get<IFileManager>(IFileManager);
       serv['filesPath'] = 'test/files';
       filesForDelete = [];
+      await deleteTestFiles();
+      
     });
     
     it('[success] just upload file', async () => {
       const result = await serv.upload(testFile);
-      filesForDelete.push(result);
+      expect(result).toEqual(`v1_${testFile.originalname}`);
     });
 
     it('[success] upload file, when hashsum equals previos version', async () => {
       const fileOne = await serv.upload(testFile);
       const fileTwo = await serv.upload(testFile);
-      filesForDelete.push(fileOne);
+
+      expect(fileOne).toEqual(`v1_${testFile.originalname}`);
+      expect(fileTwo).toBeUndefined();
     });
 
     it('[success] upload and update file', async () => {
-      for(let i = 0; i < 10; i++){
-        const fileName = await serv.upload(testFile);
+      const testCount = 20;
+      for(let i = 0; i < testCount; i++){
+        await serv.upload(testFile);
         testFile.buffer = Buffer.from(`Now it ${i} version`);
-        filesForDelete.push(fileName);
       }
+      const path = `${process.cwd()}/${filesPath}`;
+      const files = await readdir(path);
+      const uniques = new Set(files);
+
+      expect(files.length).toEqual(uniques.size);
+      expect(files.length).toEqual(testCount);
     });
 
     it('[success] upload files with difficult names', async () => {
       const difficultNames = ['v1', 'v2_', 'v_2_v3', '____2', '1', '2', '3', '4'];
-        
+
       for(const name of difficultNames.values()){
         testFile.originalname = name;
-        if(name === '1'){
-          console.log(1);
-        }
-        const fileName = await serv.upload(testFile);
-        filesForDelete.push(fileName);
+        await serv.upload(testFile);
       }
-      const a = 0;
+
+      const path = `${process.cwd()}/${filesPath}`;
+      const files = await readdir(path);
+      const uniques = new Set(files);
+
+      expect(files.length).toEqual(uniques.size);
+      expect(files.length).toEqual(difficultNames.length);
+    });
+
+    it('[success] just delete file without version', async () => {
+      const files: string[] = [];
+      for(let i = 0; i < 10; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+      const deletedFile = await serv.delete(testFile.originalname);
+
+      expect(deletedFile).toEqual(files[files.length - 1]);
+    });
+
+    it('[success] just delete file with version', async () => {
+      const targetVersion = 1;
+      const files: string[] = [];
+      for(let i = 0; i < 10; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+      const deletedFile = await serv.delete(testFile.originalname, targetVersion);
+      expect(deletedFile).toEqual(files[0]);
+    });
+
+    it('[failed] try delete not existing file name', async () => {
+      await expect(async () => {
+        await serv.delete(testFile.originalname);
+      }).rejects.toThrow(
+        new BadRequestException(`File doesn't existing`)
+      );
+    });
+
+    it('[failed] try delete not existing file version', async () => {
+      const files: string[] = [];
+      for(let i = 0; i < 3; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+
+      await expect(async () => {
+        await serv.delete(testFile.originalname, 11);
+      }).rejects.toThrow(
+        new BadRequestException(`File doesn't existing`)
+      );
     });
 
     it('[success] get file without version', async () => {
-      const result = await serv.get('1');
+      const files: string[] = [];
+      for(let i = 0; i < 10; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+      const result = await serv.get(testFile.originalname);
+      expect(basename(result)).toEqual(`v10_${testFile.originalname}`);
     });
 
     it('[success] get file with version', async () => {
-      const result = await serv.get('1');
+      const targetVersion = 7;
+      const files: string[] = [];
+      for(let i = 0; i < 10; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+      const result = await serv.get(testFile.originalname, targetVersion);
+      expect(basename(result))
+        .toEqual(`v${targetVersion}_${testFile.originalname}`);
     });
 
-    it('[failed] get file without version', async () => {
-      const result = await serv.get('1');
+    it('[failed] get not existing file', async () => {
+      await expect(async () => {
+        await serv.get(testFile.originalname);
+      }).rejects.toThrow(
+        new BadRequestException(`File doesn't existing`)
+      );
     });
 
-    it('[failed] get file with version', async () => {
-      const result = await serv.get('1');
+    it('[failed] get not existing file version', async () => {
+      const files: string[] = [];
+      for(let i = 0; i < 10; i++){
+        const fileName = await serv.upload(testFile);
+        testFile.buffer = Buffer.from(`Now it ${i} version`);
+        files.push(fileName);
+      }
+
+      await expect(async () => {
+        await serv.get(testFile.originalname, 12);
+      }).rejects.toThrow(
+        new BadRequestException(`File doesn't existing`)
+      );
     });
 
     afterEach( async () => {
-      if(filesForDelete.length > 0){
-        filesForDelete.forEach(async fileName => {
-          const filePath = `${process.cwd()}/${filesPath}/${fileName}`;
-          const isExist = await exists(filePath);
-          if(isExist){
-            remove(filePath)
-          }
-        })
-      }
+      await deleteTestFiles();
     });
   });
 });

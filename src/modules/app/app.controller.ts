@@ -5,7 +5,6 @@ import {
   Param,
   Post,
   Query,
-  Req,
   Res,
   UseGuards,
   UseInterceptors,
