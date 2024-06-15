@@ -6,18 +6,17 @@ import { join } from 'path';
 
 type File = Express.Multer.File;
 
-const filesPath = `files`
-
 @Injectable()
-export class LocalFileManager extends IFileManager {
-  private readonly logger = new Logger(LocalFileManager.name);
+export class LocalFileManagerService extends IFileManager {
+  private readonly filesPath = `files`;
+  private readonly logger = new Logger(LocalFileManagerService.name);
   
   public override async upload(file: File): Promise<string> {
     let fileName = '';
     const files = await this.getVersionFiles(file.originalname);
     if(files.length > 0){
       const res = files[files.length - 1];
-      const lastVersion = await readFile(join(filesPath,res));
+      const lastVersion = await readFile(join(this.filesPath,res));
       const [hashA, hashB] = await Promise.all([
         this.computeFileHash(file.buffer),
         this.computeFileHash(lastVersion)
@@ -33,7 +32,7 @@ export class LocalFileManager extends IFileManager {
       fileName = `v1_${file.originalname}`;
     }
     try {
-      await writeFile(join(filesPath, fileName), file.buffer);
+      await writeFile(join(this.filesPath, fileName), file.buffer);
       return fileName;
     }
     catch(err){
@@ -46,7 +45,7 @@ export class LocalFileManager extends IFileManager {
     if(files.length === 0){
       throw new BadRequestException(`File doesn't existing`);
     }
-    return `${process.cwd()}/${filesPath}/${files[files.length - 1]}`;
+    return `${process.cwd()}/${this.filesPath}/${files[files.length - 1]}`;
   }
 
   public override async delete(fileName: string, version?: number): Promise<string> {
@@ -55,13 +54,18 @@ export class LocalFileManager extends IFileManager {
       throw new BadRequestException(`File doesn't existing`);
     }
     const filePath = files[files.length - 1];
-    await remove(`${process.cwd()}/${filePath}/${filePath}`);
+    await remove(`${process.cwd()}/${this.filesPath}/${filePath}`);
     return filePath;
   }
 
   private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
-    const files = await readdir(join(filesPath));
-    const filteredFiles = files.filter(file => file.includes(fileName, 3));
+    const files = await readdir(join(this.filesPath));
+    if(fileName === '1'){
+      console.log(1)
+    }
+    const filteredFiles = files.filter(file => 
+      file.slice(file.indexOf(`_`)) === fileName
+    );
     if(version){
       const findedVersion = files.find(
         file => Number(file.substring(1, file.indexOf(`_`))) === version

@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { IFileManager } from './file-manager.interface';
-import { LocalFileManager } from './file-manager.service';
+import { LocalFileManagerService } from './file-manager.service';
 
 @Module({
   providers:[
     {
       provide: IFileManager,
-      useClass: LocalFileManager
+      useClass: LocalFileManagerService
     }
   ],
   exports:[

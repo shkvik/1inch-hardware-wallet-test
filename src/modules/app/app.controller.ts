@@ -19,7 +19,7 @@ import {
   ApiTags
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AppService } from './app.service';
 import { FileGuard } from 'src/guards/base.guard';
 import { FileRequired } from './utils/file.decorator';
