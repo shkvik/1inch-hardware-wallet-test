@@ -1,11 +1,15 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEmpty, IsInt, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from 'class-validator';
 
-export class FileParams {
+export class FileParam {
   @IsString()
   @IsNotEmpty()
   name: string;
+}
 
-  @IsString()
-  @IsNotEmpty()
-  version: string;
+export class FileQueries{
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : Number(value)))
+  @IsInt()
+  version?: number;
 }

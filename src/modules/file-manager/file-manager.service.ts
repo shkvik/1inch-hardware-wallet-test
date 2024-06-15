@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { IFileManager } from './file-manager.interface';
 import { writeFile, readdir, readFile } from 'fs-extra';
-import * as crypto from 'crypto';
+import { createHash } from 'crypto';
 import { join } from 'path';
 
 type File = Express.Multer.File;
@@ -40,21 +40,32 @@ export class LocalFileManager extends IFileManager {
     }
   }
 
-  public override async read(fileName: string, version?: number): Promise<void> {
-    
+  public override async read(fileName: string, version?: number): Promise<string> {
+    const files = await this.getVersionFiles(fileName, version);
+    if(files.length === 0){
+      throw new BadRequestException(`File doesn't existing`);
+    }
+    return `${process.cwd()}/${filePath}/${files[files.length - 1]}`;
   }
 
   public override async delete(fileName: string, version?: number): Promise<void> {
     
   }
 
-  private async getVersionFiles(fileOriginalName: string): Promise<string[]>{
+  private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
     const files = await readdir(join(filePath));
-    return files.filter(file => file.includes(fileOriginalName, 3));
+    const filteredFiles = files.filter(file => file.includes(fileName, 3));
+    if(version){
+      const findedVersion = files.find(
+        file => Number(file.substring(1, file.indexOf(`_`))) === version
+      );
+      return findedVersion ? [findedVersion] : [];
+    }
+    return filteredFiles;
   }
 
   private async computeFileHash(buffer: Buffer): Promise<string> {
-    const hashSum = crypto.createHash('sha256')
+    const hashSum = createHash('sha256')
     hashSum.update(buffer);
     const hex = hashSum.digest('hex');
     return hex;
