@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -11,7 +10,14 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBody, ApiConsumes, ApiParam, ApiQuery, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { 
+  ApiBody, 
+  ApiConsumes, 
+  ApiParam, 
+  ApiQuery, 
+  ApiSecurity, 
+  ApiTags
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request, Response } from 'express';
 import { AppService } from './app.service';
@@ -31,22 +37,21 @@ export class AppController {
   public async getFile(
     @Param() params: FileParam,
     @Query() queries: FileQueries,
-    @Res() res: Response) {
-    const filePath = await this.appService.getFile(params, queries);
-    return res.sendFile(filePath)
+    @Res() res: Response
+  ): Promise<void> {
+    return res.sendFile(await this.appService.getFile(params, queries))
   }
 
-  @Delete(`/:name/:?version`)
-  @ApiParam({ name: 'name', required: false })
-  @ApiParam({ name: 'version', required: false })
+  @Delete(`:name`)
+  @ApiParam({ name: 'name', required: true })
+  @ApiQuery({ name: 'version', required: false })
   @ApiSecurity(`access-key`)
   @UseGuards(FileGuard)
   public async deleteFile(
     @Param() params: FileParam,
-    @Query() queries: FileQueries,
-    @Req() req: Request
-  ) {
-    return true;
+    @Query() queries: FileQueries
+  ): Promise<string> {
+    return this.appService.deleteFile(params, queries);
   }
 
   @Post()
@@ -55,7 +60,7 @@ export class AppController {
   @ApiConsumes('multipart/form-data')
   @ApiBody(API_BODY)
   @UseInterceptors(FileInterceptor('file'))
-  public async uploadFile(@FileRequired() file: Express.Multer.File) {
+  public async uploadFile(@FileRequired() file: Express.Multer.File): Promise<string> {
     return this.appService.uploadFile(file);
   }
 }

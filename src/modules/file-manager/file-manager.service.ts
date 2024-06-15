@@ -1,23 +1,23 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { IFileManager } from './file-manager.interface';
-import { writeFile, readdir, readFile } from 'fs-extra';
+import { writeFile, readdir, readFile, remove } from 'fs-extra';
 import { createHash } from 'crypto';
 import { join } from 'path';
 
 type File = Express.Multer.File;
 
-const filePath = `files`
+const filesPath = `files`
 
 @Injectable()
 export class LocalFileManager extends IFileManager {
   private readonly logger = new Logger(LocalFileManager.name);
   
-  public override async upload(file: File): Promise<void> {
+  public override async upload(file: File): Promise<string> {
     let fileName = '';
     const files = await this.getVersionFiles(file.originalname);
     if(files.length > 0){
       const res = files[files.length - 1];
-      const lastVersion = await readFile(join(filePath,res));
+      const lastVersion = await readFile(join(filesPath,res));
       const [hashA, hashB] = await Promise.all([
         this.computeFileHash(file.buffer),
         this.computeFileHash(lastVersion)
@@ -33,27 +33,34 @@ export class LocalFileManager extends IFileManager {
       fileName = `v1_${file.originalname}`;
     }
     try {
-      await writeFile(join(filePath, fileName), file.buffer);
+      await writeFile(join(filesPath, fileName), file.buffer);
+      return fileName;
     }
     catch(err){
       this.logger.error(err.message);
     }
   }
 
-  public override async read(fileName: string, version?: number): Promise<string> {
+  public override async get(fileName: string, version?: number): Promise<string> {
     const files = await this.getVersionFiles(fileName, version);
     if(files.length === 0){
       throw new BadRequestException(`File doesn't existing`);
     }
-    return `${process.cwd()}/${filePath}/${files[files.length - 1]}`;
+    return `${process.cwd()}/${filesPath}/${files[files.length - 1]}`;
   }
 
-  public override async delete(fileName: string, version?: number): Promise<void> {
-    
+  public override async delete(fileName: string, version?: number): Promise<string> {
+    const files = await this.getVersionFiles(fileName, version);
+    if(files.length === 0){
+      throw new BadRequestException(`File doesn't existing`);
+    }
+    const filePath = files[files.length - 1];
+    await remove(`${process.cwd()}/${filePath}/${filePath}`);
+    return filePath;
   }
 
   private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
-    const files = await readdir(join(filePath));
+    const files = await readdir(join(filesPath));
     const filteredFiles = files.filter(file => file.includes(fileName, 3));
     if(version){
       const findedVersion = files.find(

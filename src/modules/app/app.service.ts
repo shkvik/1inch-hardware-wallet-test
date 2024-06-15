@@ -4,21 +4,19 @@ import { FileParam, FileQueries } from './dto/file.params.dto';
 
 @Injectable()
 export class AppService {
-  constructor(
-    private readonly fileManager: IFileManager
-  ) {}
-
-  public async getFile(params: FileParam, queries: FileQueries) {
-    const { name } = params;
-    const { version } = queries;
-    return this.fileManager.read(name, version);
-  }
-
-  public async deleteFile(){
+  constructor(private readonly fileManager: IFileManager) {}
     
+  public async getFile(params: FileParam, queries: FileQueries): Promise<string> {
+    return this.fileManager.get(params.name, queries.version);
   }
 
-  public async uploadFile(file: Express.Multer.File){
-    await this.fileManager.upload(file);
+  public async deleteFile(params: FileParam, queries: FileQueries): Promise<string>{
+    const deletedFileName = await this.fileManager.delete(params.name, queries.version);
+    return `Success deleting file ${deletedFileName}`;
+  }
+
+  public async uploadFile(file: Express.Multer.File): Promise<string> {
+    const uploadedFileName = await this.fileManager.upload(file);
+    return `Success uploaded file ${uploadedFileName}`;
   }
 }
