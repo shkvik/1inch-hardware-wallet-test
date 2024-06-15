@@ -59,7 +59,9 @@ export class AppController {
   @ApiConsumes('multipart/form-data')
   @ApiBody(API_BODY)
   @UseInterceptors(FileInterceptor('file'))
-  public async uploadFile(@FileRequired() file: Express.Multer.File): Promise<string> {
+  public async uploadFile(
+    @FileRequired() file: Express.Multer.File
+  ): Promise<string> {
     return this.appService.uploadFile(file);
   }
 }

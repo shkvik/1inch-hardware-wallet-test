@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LocalFileManagerService } from 'src/modules/file-manager/file-manager.service';
 import { IFileManager } from 'src/modules/file-manager/file-manager.interface';
 import { Readable } from 'stream';
-import { remove, exists, readdir } from 'fs-extra';
+import { remove, readdir } from 'fs-extra';
 import { BadRequestException } from '@nestjs/common';
 import { basename } from 'path';
 

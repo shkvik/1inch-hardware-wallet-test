@@ -1,5 +1,12 @@
+import { 
+  IsInt, 
+  IsNotEmpty, 
+  IsOptional, 
+  IsString, 
+  Min
+} from 'class-validator';
 import { Transform } from 'class-transformer';
-import { IsEmpty, IsInt, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from 'class-validator';
+
 
 export class FileParam {
   @IsString()
@@ -9,7 +16,12 @@ export class FileParam {
 
 export class FileQueries{
   @IsOptional()
-  @Transform(({ value }) => (value === '' || value === null || value === undefined ? undefined : Number(value)))
+  @Transform(({ value }) => convertToNumber(value))
   @IsInt()
+  @Min(1)
   version?: number;
+}
+
+function convertToNumber(value: any){
+  return value === '' || value === null || value === undefined ? undefined : Number(value);
 }

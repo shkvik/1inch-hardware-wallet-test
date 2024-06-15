@@ -12,7 +12,7 @@ export class LocalFileManagerService extends IFileManager {
   private readonly logger = new Logger(LocalFileManagerService.name);
   
   public override async upload(file: File): Promise<string> {
-    let fileName = '';
+    let fileName = `v1_${file.originalname}`;
     const files = await this.getVersionFiles(file.originalname);
     if(files.length > 0){
       const res = files[files.length - 1];
@@ -22,14 +22,11 @@ export class LocalFileManagerService extends IFileManager {
         this.computeFileHash(lastVersion)
       ]);
       if(hashA === hashB){
-        return;
+        return file.originalname;
       }
       const index = res.indexOf(`_`);
       const result = Number(res.substring(1, index)) + 1;
       fileName = `v${result}_${file.originalname}`;
-    }
-    else{
-      fileName = `v1_${file.originalname}`;
     }
     try {
       await writeFile(join(this.filesPath, fileName), file.buffer);
