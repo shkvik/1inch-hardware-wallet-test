@@ -12,6 +12,7 @@ import {
 import { 
   ApiBody, 
   ApiConsumes, 
+  ApiOperation, 
   ApiParam, 
   ApiQuery, 
   ApiSecurity, 
@@ -24,6 +25,7 @@ import { FileGuard } from 'src/guards/base.guard';
 import { FileRequired } from './utils/file.decorator';
 import { API_BODY } from './swagger/upload.swagger';
 import { FileParam, FileQueries } from './dto/file.params.dto';
+import { deleteSummary, getSummary, postDescription, postSummary } from 'src/constants/constants';
 
 @Controller()
 @ApiTags('Files')
@@ -33,6 +35,7 @@ export class AppController {
   @Get(`public/:version`)
   @ApiParam({ name: 'version'})
   @ApiQuery({ name: 'name', required: true })
+  @ApiOperation({ summary: getSummary })
   public async getFile(
     @Param() params: FileParam,
     @Query() queries: FileQueries,
@@ -46,6 +49,7 @@ export class AppController {
   @ApiQuery({ name: 'name', required: true })
   @ApiSecurity(`access-key`)
   @UseGuards(FileGuard)
+  @ApiOperation({ summary: deleteSummary })
   public async deleteFile(
     @Param() params: FileParam,
     @Query() queries: FileQueries
@@ -59,6 +63,7 @@ export class AppController {
   @ApiConsumes('multipart/form-data')
   @ApiBody(API_BODY)
   @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: postSummary, description: postDescription })
   public async uploadFile(
     @FileRequired() file: Express.Multer.File
   ): Promise<string> {
