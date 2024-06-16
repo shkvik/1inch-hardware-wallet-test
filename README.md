@@ -150,3 +150,63 @@ export class LocalFileManagerService extends IFileManager {
   }
 }
 ```
+
+### FileManager 
+In the current state, the application is working with the host storage. This is a temporary solution, if you are going to develop the service, then you need to switch to S3 type storage, for example. We need the ability to smoothly replace, so we need an interface that fulfil the requirements with the ability to replace.
+```ts
+export abstract class IFileManager {
+  abstract get(fileName: string, version?: number): Promise<string>;
+  abstract delete(fileName: string, version?: number): Promise<string>;
+  abstract upload(file: Express.Multer.File): Promise<string>;
+}
+```
+Now files are saved with the version indicated at the beginning of the name.
+```
+testFile.txt => v1_testFile.txt => v2_testFile.txt => v3_testFile.txt
+```
+To work with the search for files in this format, a method is used with the search and sorting of versions
+```ts
+export class LocalFileManagerService extends IFileManager {
+  private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
+    const files = await readdir(join(this.filesPath));
+    const filteredFiles = files.filter(file => {
+      return this.getPureNameFromFileName(file) === fileName;
+    });
+    filteredFiles.sort((a,b)=>{
+      return this.getVersionFromFileName(a) - this.getVersionFromFileName(b);
+    }) 
+    if(version){
+      const findedVersion = filteredFiles.find(
+        file => this.getVersionFromFileName(file) === version
+      );
+      return findedVersion ? [findedVersion] : [];
+    }
+    return filteredFiles;
+  }
+
+  private getPureNameFromFileName(fileName: string): string {
+    return fileName.slice(fileName.indexOf(`_`) + 1);
+  }
+  
+  private getVersionFromFileName(fileName: string): number{
+    return Number(fileName.substring(1, fileName.indexOf(`_`)));
+  }
+}
+```
+#### How improve?
+This will work well as long as there are not very many files in the storage, but later the speed will start to sink. If we imagine that we will not switch to cloud storage and use third-party databases, that this solution can be improved to increase the speed of search and sorting. To improve operations, you need to create a data structure based on the AVL tree, as well as add a hot start. When launching the application, you will need to update this data structure to warm up before searching, as well as monitor the deletion of versions and files.
+
+### Tests
+1. Just upload file
+2. Upload file, when hashsum equals previos version
+3. Upload and update file
+4. Upload files with difficult names
+5. Just delete file without version
+6. Just delete file with version
+7. Try delete not existing file name
+8. Try delete not existing file version
+9. Get file without version
+10. Get file with version
+11. Get not existing file
+12. Get not existing file version
+![image](https://github.com/shkvik/1inch-hardware-wallet-test/assets/75574213/0da7a51a-cc14-4472-83c4-7570548038dd)
