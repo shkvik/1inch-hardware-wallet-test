@@ -60,12 +60,14 @@ describe('Services', () => {
       expect(result).toEqual(`v1_${testFile.originalname}`);
     });
 
-    it('[success] upload file, when hashsum equals previos version', async () => {
-      const fileOne = await serv.upload(testFile);
-      const fileTwo = await serv.upload(testFile);
-
-      expect(fileOne).toEqual(`v1_${testFile.originalname}`);
-      expect(fileTwo).toEqual(testFile.originalname);
+    it('[failed] upload file, when hashsum equals previos version', async () => {
+      let rjectedFile = '';
+      await expect(async () => {
+        await serv.upload(testFile);
+        rjectedFile = await serv.upload(testFile);
+      }).rejects.toThrow(
+        new BadRequestException(`${testFile.originalname} hasn't any changes!`)
+      );
     });
 
     it('[success] upload and update file', async () => {

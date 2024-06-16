@@ -15,18 +15,21 @@ export class LocalFileManagerService extends IFileManager {
     let fileName = `v1_${file.originalname}`;
     const files = await this.getVersionFiles(file.originalname);
     if(files.length > 0){
-      const res = files[files.length - 1];
-      const lastVersion = await readFile(join(this.filesPath,res));
+      const lastVersionFileName = files[files.length - 1];
+      const lastVersionFileBin = await readFile(
+        join(this.filesPath, lastVersionFileName)
+      );
       const [hashA, hashB] = await Promise.all([
         this.computeFileHash(file.buffer),
-        this.computeFileHash(lastVersion)
+        this.computeFileHash(lastVersionFileBin)
       ]);
       if(hashA === hashB){
-        return file.originalname;
+        throw new BadRequestException(
+          `${file.originalname} hasn't any changes!`
+        );
       }
-      const index = res.indexOf(`_`);
-      const result = Number(res.substring(1, index)) + 1;
-      fileName = `v${result}_${file.originalname}`;
+      const nextVersion = this.getVersionFromFileName(lastVersionFileName) + 1;
+      fileName = `v${nextVersion}_${file.originalname}`;
     }
     try {
       await writeFile(join(this.filesPath, fileName), file.buffer);
@@ -58,21 +61,26 @@ export class LocalFileManagerService extends IFileManager {
   private async getVersionFiles(fileName: string, version?: number): Promise<string[]>{
     const files = await readdir(join(this.filesPath));
     const filteredFiles = files.filter(file => {
-      const tmp = file.slice(file.indexOf(`_`) + 1);
-      return tmp === fileName;
+      return this.getPureNameFromFileName(file) === fileName;
     });
     filteredFiles.sort((a,b)=>{
-      const versionA = Number(a.substring(1, a.indexOf(`_`)));
-      const versionB = Number(b.substring(1, b.indexOf(`_`)));
-      return versionA - versionB;
+      return this.getVersionFromFileName(a) - this.getVersionFromFileName(b);
     }) 
     if(version){
-      const findedVersion = files.find(
-        file => Number(file.substring(1, file.indexOf(`_`))) === version
+      const findedVersion = filteredFiles.find(
+        file => this.getVersionFromFileName(file) === version
       );
       return findedVersion ? [findedVersion] : [];
     }
     return filteredFiles;
+  }
+
+  private getPureNameFromFileName(fileName: string): string {
+    return fileName.slice(fileName.indexOf(`_`) + 1);
+  }
+  
+  private getVersionFromFileName(fileName: string): number{
+    return Number(fileName.substring(1, fileName.indexOf(`_`)));
   }
 
   private async computeFileHash(buffer: Buffer): Promise<string> {
