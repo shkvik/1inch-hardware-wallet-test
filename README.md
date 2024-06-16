@@ -53,7 +53,7 @@ $ npm run test
 The first thing that comes to mind, what if the files have different names? The application should not break if it encounters such a problem. To do this, you need to add the ability to address by name, but at the same time maintaining the conditions of the task
 
 For convenient testing of the application, you can use swagger at http://localhost:3000/docs
-![image](https://github.com/shkvik/1inch-hardware-wallet-test/assets/75574213/f4fe0e81-b857-4180-8388-417725204e17)
+![image](https://github.com/shkvik/1inch-hardware-wallet-test/assets/75574213/c919b43f-aeb8-4f91-b592-b2c288fe0c32)
 
 ### Upload Method
 1. Upload method should accept any binary file with any name.
