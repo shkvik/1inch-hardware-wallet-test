@@ -49,6 +49,20 @@ $ npm run start:prod
 $ npm run test
 ```
 
+## Docker
+```bash
+# Build container
+$ docker build -t 1inch_test .
+
+# run image
+$ docker run -d -p 3000:3000 --name 1inch_container \
+  -e APP_PORT=3000 \
+  -e DOMAIN=http://localhost: \
+  -e SWAGGER_PATH=docs \
+  -e SECRET_TOKEN=123 \
+  1inch_test
+```
+
 ## Solution 
 The first thing that comes to mind, what if the files have different names? The application should not break if it encounters such a problem. To do this, you need to add the ability to address by name, but at the same time maintaining the conditions of the task
 
