@@ -7,11 +7,11 @@ export class AppService {
   constructor(private readonly fileManager: IFileManager) {}
     
   public async getFile(params: FileParam, queries: FileQueries): Promise<string> {
-    return this.fileManager.get(params.name, queries.version);
+    return this.fileManager.get(queries.name, params.version);
   }
 
   public async deleteFile(params: FileParam, queries: FileQueries): Promise<string>{
-    const deletedFileName = await this.fileManager.delete(params.name, queries.version);
+    const deletedFileName = await this.fileManager.delete(queries.name, params.version);
     return `Success deleting file ${deletedFileName}`;
   }
 

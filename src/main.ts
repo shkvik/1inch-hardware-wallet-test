@@ -3,13 +3,15 @@ import { AppModule } from './modules/app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { mkdir } from 'fs';
+import { swaggerDescription } from './constants/constants';
 
 async function bootstrap() {
   mkdir(`${process.cwd()}/files`, ()=> {});
   
   const app = await NestFactory.create(AppModule);
   const config = new DocumentBuilder()
-    .setTitle('1inch Hardware Wallet test')
+    .setTitle('1inch Hardware Wallet test task')
+    .setDescription(swaggerDescription)
     .addServer(`${process.env.DOMAIN}${process.env.APP_PORT}`)
     .addApiKey({type: 'apiKey', name: 'X-API-KEY', in: 'header'}, 'access-key')
     .build();

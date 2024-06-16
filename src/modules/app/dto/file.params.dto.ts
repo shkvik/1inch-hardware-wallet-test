@@ -7,19 +7,18 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-
 export class FileParam {
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-}
-
-export class FileQueries{
   @IsOptional()
   @Transform(({ value }) => convertToNumber(value))
   @IsInt()
   @Min(1)
   version?: number;
+}
+
+export class FileQueries{
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 }
 
 function convertToNumber(value: any){

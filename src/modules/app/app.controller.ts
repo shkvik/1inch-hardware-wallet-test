@@ -25,14 +25,14 @@ import { FileRequired } from './utils/file.decorator';
 import { API_BODY } from './swagger/upload.swagger';
 import { FileParam, FileQueries } from './dto/file.params.dto';
 
-@Controller('file')
+@Controller()
 @ApiTags('Files')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get(`:name`)
-  @ApiParam({ name: 'name', required: true })
-  @ApiQuery({ name: 'version', required: false })
+  @Get(`public/:version`)
+  @ApiParam({ name: 'version'})
+  @ApiQuery({ name: 'name', required: true })
   public async getFile(
     @Param() params: FileParam,
     @Query() queries: FileQueries,
@@ -41,9 +41,9 @@ export class AppController {
     return res.sendFile(await this.appService.getFile(params, queries))
   }
 
-  @Delete(`:name`)
-  @ApiParam({ name: 'name', required: true })
-  @ApiQuery({ name: 'version', required: false })
+  @Delete(`private/:version`)
+  @ApiParam({ name: 'version'})
+  @ApiQuery({ name: 'name', required: true })
   @ApiSecurity(`access-key`)
   @UseGuards(FileGuard)
   public async deleteFile(
@@ -53,7 +53,7 @@ export class AppController {
     return this.appService.deleteFile(params, queries);
   }
 
-  @Post()
+  @Post(`private`)
   @ApiSecurity(`access-key`)
   @UseGuards(FileGuard)
   @ApiConsumes('multipart/form-data')
