@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { LocalFileManagerService } from 'src/modules/file-manager/file-manager.service';
 import { IFileManager } from 'src/modules/file-manager/file-manager.interface';
 import { Readable } from 'stream';
-import { remove, readdir } from 'fs-extra';
+import { remove, readdir, mkdir } from 'fs-extra';
 import { BadRequestException } from '@nestjs/common';
 import { basename } from 'path';
 
@@ -16,10 +16,14 @@ async function deleteTestFiles(){
   await Promise.all(tasks);
 }
 
+
+
 describe('Services', () => {
-
+  
   let serv: IFileManager;
-
+  
+  mkdir(`${process.cwd()}/test/files`, ()=> {});
+  
   describe(`FileManager`, () => {
     let testFile: Express.Multer.File = {
       fieldname: 'file',
